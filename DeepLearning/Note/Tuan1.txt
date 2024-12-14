@@ -1,0 +1,60 @@
+* Biểu diễn dữ liệu
+- Hình ảnh =>       Ma trận / tensor
+- Văn bản =>     Vector
+- Âm thanh =>     Vector 
+
+* Kiến thức nền tảng:
+1. Toán:
+  - Đại số tuyến tính
+     + Cộng, nhân ma trận
+  - Giải tích: 
+     + Đạo hàm
+
+2. Các mô hình học nông (Shallow models)
+  - Linear Regression
+  - Logistic Regression
+  - Softmax    
+
+* Nội dung chính
+1. Ảnh: 
+    - CNN
+    - ViT
+2. Văn Bản: 
+    - RNN
+    - Attention
+    - Transformer
+        + BERT 
+        + GPT
+        + T5
+
+
+Bài báo giới thiệu Transformer: "Attention is all you need" https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf 
+
+
+
+
+Đại số tuyến tính.
+
+* Khái niệm
+- Vô hướng (Scalar)
+    + Thể hiện khối lượng, độ dài, khối lượng
+- Vector: Đối tượng có chiều dữ liệu: Vận tốc, lực, điểm trong không gian nhiều chiều.
+- Ma trận (Ví dụ ảnh đen trắng)
+- Tensor: Không gian 3 chiều trở lên (Ví dụ ảnh màu.)
+
+* Phép toán
+- Trên vector
+    + Tổng 2 vector
+    + Tích vô hướng.
+- Trên ma trận
+    + Nhân 2 ma trận
+    + Tích Hadamad
+    + Ma trận đơn vị
+    + Ma trận nghịch đảo
+
+
+* Đạo hàm. Thể hiện sự biến thiên hàm số, là công cụ quan trọng để tìm điểm cực trị của hàm số.
+
+- Đạo hàm của hàm ẩn. (Chain Rule)
+    (f(g(x)))' = f'(g(x))*g'(x) = (df/dg)*(dg/dx)
+- Gradient: Gradient của một hàm số f theo vector x là một vector gồm các đạo hàm riêng của f.
