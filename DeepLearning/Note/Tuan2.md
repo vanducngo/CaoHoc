@@ -21,7 +21,23 @@
         -  Thuật toán Adam được cài sẵn trong các tensorflow, pytorch.
 
 
-- 3 công việc cần làm khi thiết kế mô hình: 
+- **3 công việc cần làm khi thiết kế mô hình:** 
     - Thiết kế mô hình dự đoán f(x)
     - Thiết kế hàm lỗi dự đoán L(theta, x,y)
-    - Tìm tham số theta để hàm lộ lỗi L nhỏ nhất => Các mô hình DL
+    - ~~Tìm tham số theta để hàm lộ lỗi L nhỏ nhất~~ => Các mô hình DL.
+
+
+
+<h2> Liear Regression</H2>
+
+![Hình minh họa](./images/img2.jpg)
+
+- Bước 1: Thiết kệ hàm dự đoán: f.theta(xi) = theta1 * x + theta0.
+- Bước 2: Thiết kế hàm lỗi:
+- Bước 3: Tính đạo hàm. (Cho Tensor, PyTorch tính)
+
+
+**Nguyên lý Occam**
+
+- Cần học:
+    - Đạo hàm của hàm hợp.
