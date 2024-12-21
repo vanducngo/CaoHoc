@@ -58,3 +58,9 @@ Bài báo giới thiệu Transformer: "Attention is all you need" https://procee
 - Đạo hàm của hàm ẩn. (Chain Rule)
     (f(g(x)))' = f'(g(x))*g'(x) = (df/dg)*(dg/dx)
 - Gradient: Gradient của một hàm số f theo vector x là một vector gồm các đạo hàm riêng của f.
+
+
+- (problem <-- why <-- solution)+
+
+- dữ liệu x => mô hình máy học f(x) => Dự đoán y~ xấp xỉ giá trị thực y.
+    - Cần hàm loss L(o, x,y)
