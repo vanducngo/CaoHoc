@@ -9,3 +9,10 @@
     - Đã ddugns là đúng luôn
     - Sai thì bị phạt nặng, hơn => Mô hình học nhanh hơn 
     - => Dùng hàm Log 
+
+
+- Xác định số layer, số neutron mỗi layer
+    - Dùng hyper param tuning.
+        - Random search
+        - Grid Search.
+        - Bayersian Optimization.
