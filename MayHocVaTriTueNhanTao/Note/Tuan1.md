@@ -30,7 +30,14 @@
 <h2>Phổ điểm</h2>
 
 - Quá trình: 30%
+    - 2 bài tập
+        - Một bài về Tabular data
+        - Một bài về Computer Vision
 - Giữa kỳ: 25%
+    - Đọc pager
+    - Trả lời câu hỏi
+    - Thuyết trình
+    - Không cần chạy code
 - Cuối kỳ 45%
 
 <h2>Yêu cầu</h2>
