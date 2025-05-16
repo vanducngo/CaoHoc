@@ -119,9 +119,7 @@ class LLaMP(nn.Module):
             ],
         )
 
-        '''
-        Cấu hình LoRA cho các lớp v_proj và q_proj của các decoder LLM được sử dụng 
-        '''
+        ### Cấu hình LoRA cho các lớp v_proj và q_proj của các decoder LLM được sử dụng 
         language_peft_config = LoraConfig(
             task_type=TaskType.FEATURE_EXTRACTION,
             inference_mode=False,
@@ -131,7 +129,7 @@ class LLaMP(nn.Module):
             target_modules=["v_proj", "q_proj"],
         )
 
-        # Tải mô hình CLIP tiền huấn luyệ
+        ### Tải mô hình CLIP tiền huấn luyệ
         self.clip_model = CLIPModel.from_pretrained(
             "openai/clip-vit-base-patch16",
             use_auth_token=hf_token,
@@ -146,6 +144,8 @@ class LLaMP(nn.Module):
             use_auth_token=hf_token,
         )
 
+
+        ### Chuẩn bị Input Texts cho CLIP:
         self.text_inputs = {}
         self.prompt_offset_indices = {}
         self.eos_offset = {}
@@ -290,7 +290,7 @@ class LLaMP(nn.Module):
 
         print("Loading CLIP text embeddings from {}".format(args.clip_text_embed_file))
         
-        # Tải các text embeddings của CLIP đã được tính toán trước
+        ### Tải các text embeddings của CLIP đã được tính toán trước
         text_embeddings = torch.load(
             os.path.join(self.dset.data_dir, args.clip_text_embed_file)
         )
@@ -354,7 +354,7 @@ class LLaMP(nn.Module):
         self.visual_prompt_depth = args.visual_prompt_depth
         self.text_prompt_depth = self.prompt_depth
 
-        # Khởi tạo Visual Prompts nếu được kích hoạt
+        ### Khởi tạo Visual Prompts nếu được kích hoạt
         if self.visual_prompting:
             self.visual_prompts = nn.Parameter(
                 torch.empty(
@@ -369,7 +369,7 @@ class LLaMP(nn.Module):
             # Khởi tạo trọng số Kaiming Uniform cho visual prompts
             nn.init.kaiming_uniform_(self.visual_prompts, a=math.sqrt(5))
 
-        # Khởi tạo Text Prompts => "a photo of a"
+        ### Khởi tạo Text Prompts => "a photo of a"
         self.text_prompts = nn.ParameterList()
 
         # Chuỗi khởi tạo cho prompt đầu tiên
@@ -415,7 +415,7 @@ class LLaMP(nn.Module):
         self.num_decoder_layers = args.num_decoder_layers
 
         print("Loading past key values from {}".format(args.past_key_value_file))
-        # Tải Past Key Values (KV Cache) từ file
+        ### Tải Past Key Values (KV Cache) từ file
         content_dict = torch.load(
             os.path.join(DATA_FOLDER, dset.data_dir, args.past_key_value_file)
         )
@@ -557,7 +557,7 @@ class LLaMP(nn.Module):
                     "new": self.new_token_bias_attn_mask,
                 }
 
-        # Khởi tạo Class Tokens (các learnable prompt cho LLM)
+        ### Khởi tạo Class Tokens (các learnable prompt cho LLM)
         self.class_token = nn.ParameterList(
             [
                 nn.Parameter(
@@ -575,7 +575,7 @@ class LLaMP(nn.Module):
         for i in range(len(self.class_token)):
             nn.init.kaiming_uniform_(self.class_token[i], a=math.sqrt(5))
 
-        # Khởi tạo các Lớp Decoder của LLM (`self.class_decoder`) và Norm Layer ---
+        ### Khởi tạo các Lớp Decoder của LLM (`self.class_decoder`) và Norm Layer ---
         self.class_proj = nn.Identity()
         self.class_norm = copy.deepcopy(model.model.norm)
         if args.lora_decoding:
@@ -602,7 +602,7 @@ class LLaMP(nn.Module):
             self.class_decoder.requires_grad_(True)
             self.class_norm.requires_grad_(True)
 
-        # Khởi tạo các Lớp Chiếu Văn bản (`self.text_proj`)
+        ### Khởi tạo các Lớp Chiếu Văn bản (`self.text_proj`)
         self.text_proj = nn.ModuleList(
             [
                 # Lớp Linear để chiếu từ kích thước ẩn của LLM sang kích thước ẩn của CLIP text model.
@@ -611,7 +611,7 @@ class LLaMP(nn.Module):
             ]
         )
 
-        # Khởi tạo LLM Prompt Bias (`self.llm_prompt_bias`)
+        ### Khởi tạo LLM Prompt Bias (`self.llm_prompt_bias`)
         self.llm_prompt_bias = nn.ParameterList(
             [
                 # Kích thước: (self.num_special_tokens, text_hidden_size của CLIP)
@@ -623,9 +623,10 @@ class LLaMP(nn.Module):
         for i in range(len(self.llm_prompt_bias)):
             nn.init.kaiming_uniform_(self.llm_prompt_bias[i], a=math.sqrt(5))
 
-        # Khởi tạo Trọng số cho Class Embeddings (`self.class_embed_weight`)
+        ### Khởi tạo Trọng số cho Class Embeddings (`self.class_embed_weight`)
         self.class_embed_weight = nn.Parameter(torch.zeros(1), requires_grad=False)
 
+        ### Kiểm soát Đóng băng Thành phần
         if args.learn_class_embed_weight:
             self.class_embed_weight.requires_grad_(True)
 
@@ -656,6 +657,8 @@ class LLaMP(nn.Module):
 
         self.class_fn = self.decode_class
 
+
+        ### Khởi tạo Logit Scale:
         self.logit_scale = nn.Parameter(
             torch.tensor([np.log(1 / 0.01)]), requires_grad=True
         )
@@ -670,7 +673,8 @@ class LLaMP(nn.Module):
     của CLIP để tạo ra các đặc trưng văn bản cuối cùng cho các lớp đối tượng.
     '''
     def decode_class(self, subset="base", bias=None):
-        # Lấy Past Key Values (KV Cache) và Attention Mask tương ứng với subset
+        ### Lấy Past Key Values (KV Cache) và Attention Mask tương ứng với subset
+        
         # self.past_key_values là một nn.ParameterDict chứa KV cache cho các subset ("base", "new", hoặc "all").
         # pkv ở đây là một danh sách (List) các nn.Parameter, mỗi Parameter chứa KV cache cho một template prompt
         # đã được chạy qua các lớp đầu của LLM.
@@ -710,6 +714,7 @@ class LLaMP(nn.Module):
             # Khởi tạo một danh sách để lưu các adaptive prompts từ tất cả các template
             encoded_prompts = []
 
+            # Lặp qua tất cả các template prompt
             for template_idx in range(self.num_text_template):
 
                 if self.token_bias:
@@ -719,7 +724,8 @@ class LLaMP(nn.Module):
                     selected_embeddings = None
                     selected_attn_mask = None
 
-                # Lặp qua tất cả các template
+                # Gọi hàm self.generate_text_features_from_prompt để tạo ra các embedding từ 
+                # LLM dựa trên KV cache, class tokens, và token bias của template
                 encoded_prompt = self.generate_text_features_from_prompt(
                     pkv[template_idx],
                     attention_mask[template_idx],
@@ -731,10 +737,15 @@ class LLaMP(nn.Module):
                 encoded_prompts.append(encoded_prompt)
 
             encoded_prompt = torch.stack(encoded_prompts, dim=0)
+        
+        ### Trả về một tuple chứa:
+        # - encoded_prompt: Các adaptive prompts đã được tạo ra và chiếu sang không gian của CLIP.
+        # - self.text_embeddings[subset]: Các text embeddings gốc của CLIP cho subset đó (dùng để so sánh hoặc tính loss).
 
         outputs = ((encoded_prompt, self.text_embeddings[subset]),)
         return outputs
 
+    ### Mục đích: Đây là hàm cốt lõi để LLM tạo ra các đặc trưng dựa trên KV Cache và các learnable class tokens.
     def generate_text_features_from_prompt(
         self,
         pkv,
@@ -747,13 +758,16 @@ class LLaMP(nn.Module):
 
         all_embeds = []
 
+        ### Lấy class_token (learnable prompts cho LLM), mở rộng nó để có số lượng bằng số lớp trong subset.
         num_classes = self.text_embeddings[subset].shape[0]
         tokens = self.class_proj(class_token)
         tokens = tokens.unsqueeze(0).expand(num_classes, -1, -1)
-
         device = tokens.device
 
+        
         if selected_embeddings is not None:
+            # Nếu có selected_embeddings (token bias), ghép nó vào trước 
+            # tokens và cập nhật attention_mask.
             attention_mask = torch.cat(
                 (
                     attention_mask.to(device),
@@ -779,6 +793,7 @@ class LLaMP(nn.Module):
                 dim=1,
             )
 
+        ### Chuẩn bị position_ids và attention_mask 4D cho các lớp decoder của LLM.
         position_ids = torch.clamp(
             torch.cumsum(attention_mask, dim=-1).long() - 1, min=0
         )[:, -tokens.shape[1] :]
@@ -791,6 +806,9 @@ class LLaMP(nn.Module):
 
         past_key_values_length = pkv[0][0].shape[2]
 
+        ### Cho tokens (bao gồm class tokens và token bias nếu có) đi qua các 
+        # lớp self.class_decoder (các lớp cuối của LLM). Quan trọng: Các lớp decoder
+        # này sử dụng past_key_value=pkv[idx] từ KV Cache đã được tải trước.
         for idx, decoder_layer in enumerate(self.class_decoder):
             layer_outputs = decoder_layer(
                 hidden_states,
@@ -802,29 +820,45 @@ class LLaMP(nn.Module):
             )
             hidden_states = layer_outputs[0]
 
+        ### Áp dụng lớp chuẩn hóa self.class_norm.
         hidden_states = self.class_norm(hidden_states)
 
+        ### Lấy các hidden states tương ứng với các vị trí của class_token (hoặc 
+        # self.num_special_tokens nếu có token bias). Đây là class_embed.
         class_embed = hidden_states[:, -self.num_special_tokens :, :]
+
+        # Áp dụng dropout và nhân với self.class_embed_weight.exp().
         class_embed = self.dropout(class_embed) * self.class_embed_weight.exp()
 
+        # Lặp qua self.llm_prompt_depth: Chiếu class_embed qua self.text_proj[i] và cộng
+        # với self.llm_prompt_bias[i]. Kết quả là các adaptive prompts ở các độ sâu khác nhau.
         for i in range(self.llm_prompt_depth):
             all_embeds.append(self.text_proj[i](class_embed) + self.llm_prompt_bias[i])
 
+        # Gọi self.encode_LLM_prompt để đưa các adaptive prompts này vào bộ mã hóa văn bản của CLIP.
         encoded_prompt = self.encode_LLM_prompt(
             torch.stack(all_embeds, dim=0), subset=subset
         )
         return encoded_prompt
 
+    ### Mục đích: Đưa các adaptive prompts (đã được chiếu từ LLM) và các text prompts cố 
+    # định (ví dụ: "a photo of a") vào bộ mã hóa văn bản của CLIP để tạo ra đặc trưng 
+    # văn bản cuối cùng.
     def encode_LLM_prompt(self, prompts, subset):
-
         device = prompts.device
+        
+        # Lấy input_ids và attention_mask của CLIP cho subset.
         input_ids = self.text_inputs[subset].input_ids.to(device)
         attention_mask = self.text_inputs[subset].attention_mask.to(device)
+        
         position_ids = None
 
         input_shape = input_ids.size()
         input_ids = input_ids.view(-1, input_shape[-1])
 
+        # Lấy embeddings ban đầu từ self.clip_model.text_model.embeddings.
+        # Chèn adaptive prompts (prompts[0]) và text prompt đầu tiên (self.text_prompts[0]) vào 
+        # vị trí thích hợp trong hidden_states (tùy theo self.prompt_type là "prefix" hay "suffix")
         if self.prompt_type == "prefix":
             hidden_states = self.clip_model.text_model.embeddings(
                 input_ids=input_ids[:, self.num_special_tokens :],
@@ -865,6 +899,7 @@ class LLaMP(nn.Module):
                 dim=1,
             )
 
+        ### Chuẩn bị causal_attention_mask và attention_mask 4D cho các lớp encoder của CLIP text model.
         causal_attention_mask = _make_causal_mask(
             input_shape, hidden_states.dtype, device=hidden_states.device
         )
@@ -872,6 +907,11 @@ class LLaMP(nn.Module):
             # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
             attention_mask = _expand_mask(attention_mask, hidden_states.dtype)
 
+        # - Lặp qua các lớp của self.clip_model.text_model.encoder.layers:
+        #    + Nếu lớp hiện tại (idx) nằm trong khoảng text_prompt_depth: 
+        #           + Chèn các adaptive prompts (prompts[idx] nếu idx < llm_prompt_depth) và text 
+        #             prompts (self.text_prompts[idx]) tương ứng vào hidden_states.
+        #    + Cho hidden_states đi qua lớp encoder hiện tại.
         for idx, encoder_layer in enumerate(self.clip_model.text_model.encoder.layers):
             if idx > 0 and idx < self.text_prompt_depth:
                 if self.prompt_type == "prefix":
@@ -947,6 +987,7 @@ class LLaMP(nn.Module):
 
             hidden_states = layer_outputs[0]
 
+        # Áp dụng lớp chuẩn hóa cuối cùng (self.clip_model.text_model.final_layer_norm).
         last_hidden_state = hidden_states
         last_hidden_state = self.clip_model.text_model.final_layer_norm(
             last_hidden_state
@@ -964,6 +1005,7 @@ class LLaMP(nn.Module):
         else:
             pooled_output = last_hidden_state[:, -1, :]
 
+        # Chiếu pooled output qua self.clip_model.text_projection để có được đặc trưng văn bản cuối cùng.
         text_features = self.clip_model.text_projection(pooled_output)
 
         return text_features
@@ -971,18 +1013,29 @@ class LLaMP(nn.Module):
     def forward(self, x, subset=None):
         if self.training:
             loss, pred = self.run(x)
+            # Nếu đang huấn luyện, trả về loss và dự đoán.
             return loss, pred
         else:
             scores = self.run(x, subset)
+            # Trả về điểm số (logits hoặc probabilities).
             return None, scores
 
+    '''
+    Tính toán trước tất cả các class embeddings (cả từ LLM và CLIP gốc) cho một subset và 
+    lưu vào self.all_class_embed. Được sử dụng trong quá trình đánh giá để không phải 
+    tính toán lại nhiều lần.
+    '''
     def compute_all_class_embeddings(self, subset):
-
         outputs = self.class_fn(subset=subset)
         class_embed = outputs[0]
 
         self.all_class_embed = class_embed
 
+    '''
+    Trích xuất đặc trưng hình ảnh từ bộ mã hóa hình ảnh của CLIP, có tích 
+    hợp visual prompts và LoRA.
+
+    '''
     def extract_image_features(self, img, target="default", dropout=False):
         if self.visual_prompting:
             image_features = self.extract_prompt_image_features(
@@ -1038,17 +1091,32 @@ class LLaMP(nn.Module):
 
         return visual_features
 
+
+    '''
+    - Thực hiện toàn bộ quá trình tính toán, từ trích xuất đặc trưng hình ảnh, tạo đặc 
+        trưng văn bản (sử dụng adaptive prompts từ LLM), tính toán logits, và 
+        loss (nếu đang huấn luyện).
+
+    '''
     def run(self, x, subset=None):
+        # Chuẩn bị dữ liệu đầu vào.
         if self.training:
             img, img_1, labels = x
         else:
             img = x[0]
 
+        # Điều chỉnh logit_scale.
         self.logit_scale.data = torch.clamp(self.logit_scale.data, 0, 4.605)
 
         normalize_fn = lambda x: F.normalize(x, dim=-1)
         logit_scale = self.logit_scale.exp()
 
+        '''
+        - Tạo/Lấy Class Embeddings:
+            + Nếu đang huấn luyện, gọi self.class_fn (tức decode_class) để tạo adaptive
+                prompts (embeds["llm"]) và lấy CLIP embeddings gốc (embeds["clip"]).
+            + Nếu đang đánh giá, sử dụng self.all_class_embed đã được tính toán trước.
+        '''
         embeds = {}
 
         if self.training:
@@ -1064,6 +1132,7 @@ class LLaMP(nn.Module):
         raw_clip_embeds = embeds["clip"]
         raw_llm_embeds = embeds["llm"]
 
+        # Chuẩn hóa tất cả các embeddings.
         for k, v in embeds.items():
             if embeds[k].ndim == 3:
                 embeds[k] = normalize_fn(v).permute(0, 2, 1)
@@ -1077,6 +1146,15 @@ class LLaMP(nn.Module):
                     orig_image_features
                 )
 
+        '''
+            - Trích xuất Đặc trưng Hình ảnh: Gọi self.extract_image_features.
+            - Tính toán Logits (Predictions):
+                + Tính tích vô hướng (dot product) giữa đặc trưng hình ảnh đã chuẩn hóa và các
+                    class embeddings (cả từ LLM và CLIP gốc) đã chuẩn hóa.
+                + target_pred["all"]: Logits sử dụng adaptive prompts từ LLM.
+                + target_pred["clip"]: Logits sử dụng CLIP embeddings gốc (dùng cho distillation loss).
+
+        '''
         target_pred = {}
         if self.training:
             class_features = self.extract_image_features(img)
@@ -1110,7 +1188,17 @@ class LLaMP(nn.Module):
             )
             target_pred["all"] = target_pred["all"].float()
 
+        # Huấn luyện
         if self.training:
+            # Tính toán Loss
+            #   + base_loss: Cross-entropy loss giữa target_pred["all"] và nhãn.
+            #   + feature_l1_loss: L1 loss giữa adaptive prompts từ LLM và CLIP embeddings 
+            #       gốc, và L1 loss giữa đặc trưng hình ảnh từ LLaMP và đặc trưng hình ảnh 
+            #       từ CLIP gốc.
+            #   + dist_loss: Knowledge distillation loss (KL divergence hoặc cross-entropy) 
+            #       giữa dự đoán từ LLaMP và dự đoán từ CLIP gốc.
+            #   + loss_total = base_loss + feature_l1_loss + dist_loss.
+
             base_loss = self.base_loss(target_pred["all"] * logit_scale, labels)
             feature_l1_loss = (
                 F.l1_loss(normalize_fn(raw_clip_embeds), normalize_fn(raw_llm_embeds))
@@ -1151,8 +1239,11 @@ class LLaMP(nn.Module):
                 "loss_l1": feature_l1_loss,
                 "loss_total": loss,
             }
+            
+            # Trả về loss và dự đoán
             return losses, target_pred["all"]
         else:
+            # Trả về dự đoán
             if target_pred["all"].ndim == 2:
                 return target_pred["all"]
             else:
