@@ -21,7 +21,8 @@
 <br />
 
 # Đề tài: Quản lý hệ thống các siêu thị thuận lợi tại TP HCM
-
+    - Chiều: 0D (Điểm)
+    - Số lượng: 100 siêu thị (có thể giảm xuống 1 tí)
 
 ## Hướng dẫn làm bài tập
 
