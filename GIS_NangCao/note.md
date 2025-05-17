@@ -20,9 +20,41 @@
 <br />
 <br />
 
-# Đề tài: Quản lý hệ thống các siêu thị thuận lợi tại TP HCM
-    - Chiều: 0D (Điểm)
-    - Số lượng: 100 siêu thị (có thể giảm xuống 1 tí)
+# Đề tài: Quản lý hệ thống các siêu thị tiện lợi tại TP HCM
+
+    * Chiều: 0D (Điểm)
+    * Số lượng: 100 siêu thị (có thể giảm xuống 1 tí)
+
+    * Note:
+        - Dữ liệu: Lấy trên Google Maps.
+        - Cốt lõi:
+            + Chức năng này có những chức năng nào
+                - Thêm
+                - Tìm kiếm 
+                - Xóa 
+                - Sửa
+                - Thống kê
+            + Có những Table nào.
+                - Ngữ nghĩa: Các dữ liệu mô tả
+                    - Toàn nhà:
+                        + Tên Tòa nhà
+                        + Mã số toàn nhà
+                        + Năm xây dựng
+                        + ...
+                - Không gian: (Vị trí)
+                    + Khối
+                    + Mặt
+                    + Đường
+                    + Điểm
+            + Điểm <-1------1-> Điểm (Quan hệ 1-1)
+        
+        - (Ý TƯỞNG CÁ NHÂN) Database cho 0D
+            + Table: Điểm
+            + Table: Siêu Thị
+            + Table: Đơn vị thi công
+            + Table: Chủ đầu tư
+            + Table 
+
 
 ## Hướng dẫn làm bài tập
 
